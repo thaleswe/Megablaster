@@ -8,8 +8,7 @@ const Game = (() => {
     MENU: 'menu',
     LOADING: 'loading',
     PLAYING: 'playing',
-    GAME_OVER: 'gameover',
-    VICTORY: 'victory',
+    RESULTS: 'results',
   };
 
   let currentState = STATE.MENU;
@@ -18,18 +17,47 @@ const Game = (() => {
   let fpsTimer = 0;
   let currentFPS = 0;
 
+  // Current stage
+  let currentStageId = 'arena-das-chamas';
+
+  // Track if player dealt damage (for 0-star detection)
+  let playerDealtDamage = false;
+
+  // Match timer
+  let matchTimer = 0;
+
+  // Stage icon mapping
+  const STAGE_ICONS = {
+    'arena-das-chamas': '🔥',
+    'arena-congelante': '❄️',
+  };
+
   // DOM elements
-  let startScreen, gameOverScreen, victoryScreen;
-  let startButton, retryButton, playAgainButton;
+  let startScreen, resultsScreen;
+  let resultsButton;
+  let resultsTitle, resultsStageName;
+  let star1, star2, star3;
+  let resultsCoinsAmount, resultsTotalCoins;
+  let playerCoinsAmount;
+  let stageListEl;
 
   function init() {
+    // Load saved progress
+    Progress.load();
+
     // Get DOM elements
     startScreen = document.getElementById('startScreen');
-    gameOverScreen = document.getElementById('gameOverScreen');
-    victoryScreen = document.getElementById('victoryScreen');
-    startButton = document.getElementById('startButton');
-    retryButton = document.getElementById('retryButton');
-    playAgainButton = document.getElementById('playAgainButton');
+    resultsScreen = document.getElementById('resultsScreen');
+    resultsButton = document.getElementById('resultsButton');
+    resultsTitle = document.getElementById('resultsTitle');
+    resultsStageName = document.getElementById('resultsStageName');
+    star1 = document.getElementById('star1');
+    star2 = document.getElementById('star2');
+    star3 = document.getElementById('star3');
+    resultsCoinsAmount = document.getElementById('resultsCoinsAmount');
+    resultsTotalCoins = document.getElementById('resultsTotalCoins');
+    playerCoinsAmount = document.getElementById('playerCoinsAmount');
+    stageListEl = document.getElementById('stageList');
 
     // Initialize scene
     GameScene.init();
@@ -39,9 +67,10 @@ const Game = (() => {
     Crosshair.init();
 
     // Button handlers
-    startButton.addEventListener('click', startGame);
-    retryButton.addEventListener('click', restartGame);
-    playAgainButton.addEventListener('click', restartGame);
+    resultsButton.addEventListener('click', returnToMenu);
+
+    // Render the start screen stage cards
+    renderStartScreen();
 
     // Start render loop (renders menu background too)
     requestAnimationFrame(gameLoop);
@@ -49,14 +78,87 @@ const Game = (() => {
     console.log('[Game] Initialized');
   }
 
-  async function startGame() {
+  function renderStartScreen() {
+    // Update coins
+    playerCoinsAmount.textContent = Progress.getCoins();
+
+    // Build stage cards
+    stageListEl.innerHTML = '';
+    const stages = Stages.getAllStages();
+
+    stages.forEach(stage => {
+      const isUnlocked = Progress.isStageUnlocked(stage.id);
+      const stars = Progress.getStageStars(stage.id);
+      const timePlayed = Progress.getStageTimePlayed(stage.id);
+      const icon = STAGE_ICONS[stage.id] || '⚔️';
+
+      const card = document.createElement('div');
+      card.className = 'stage-card' + (isUnlocked ? '' : ' locked');
+
+      // Stars HTML
+      let starsHtml = '';
+      for (let i = 0; i < 3; i++) {
+        if (i < stars) {
+          starsHtml += '<span class="star-filled">★</span>';
+        } else {
+          starsHtml += '<span class="star-empty">☆</span>';
+        }
+      }
+
+      // Time played formatted
+      const timeStr = formatTime(timePlayed);
+
+      if (isUnlocked) {
+        card.innerHTML = `
+          <span class="stage-card-icon">${icon}</span>
+          <div class="stage-card-name">${stage.name}</div>
+          <div class="stage-card-desc">${stage.description}</div>
+          <div class="stage-card-stars">${starsHtml}</div>
+          <div class="stage-card-time">${timePlayed > 0 ? '⏱ ' + timeStr : ''}</div>
+          <button class="stage-card-btn" data-stage-id="${stage.id}">PLAY</button>
+        `;
+      } else {
+        card.innerHTML = `
+          <span class="stage-card-icon">🔒</span>
+          <div class="stage-card-name">${stage.name}</div>
+          <div class="stage-card-desc">${stage.description}</div>
+          <span class="stage-card-lock">LOCKED</span>
+        `;
+      }
+
+      stageListEl.appendChild(card);
+    });
+
+    // Bind play buttons
+    stageListEl.querySelectorAll('.stage-card-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const stageId = e.target.dataset.stageId;
+        currentStageId = stageId;
+        startGame(e.target);
+      });
+    });
+  }
+
+  function formatTime(totalSeconds) {
+    const mins = Math.floor(totalSeconds / 60);
+    const secs = Math.floor(totalSeconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  async function startGame(buttonEl) {
     if (currentState !== STATE.MENU) return;
     currentState = STATE.LOADING;
-    startButton.textContent = 'LOADING...';
-    startButton.disabled = true;
 
-    // Initialize webcam tracking
-    await Tracking.init();
+    // Show loading on the clicked button
+    if (buttonEl) {
+      buttonEl.textContent = 'LOADING...';
+      buttonEl.disabled = true;
+    }
+
+    // Initialize webcam tracking (only first time)
+    if (!Tracking.isInitialized) {
+      await Tracking.init();
+    }
 
     // Hide start screen, show HUD
     startScreen.style.display = 'none';
@@ -66,7 +168,7 @@ const Game = (() => {
     resetGameState();
 
     currentState = STATE.PLAYING;
-    console.log('[Game] Started!');
+    console.log(`[Game] Started stage: ${currentStageId}`);
   }
 
   function resetGameState() {
@@ -76,14 +178,84 @@ const Game = (() => {
     Controls.reset();
     Projectiles.clearAll(GameScene.scene);
     Particles.clearAll();
+    playerDealtDamage = false;
+    matchTimer = 0;
   }
 
-  function restartGame() {
-    gameOverScreen.style.display = 'none';
-    victoryScreen.style.display = 'none';
-    HUD.show();
-    resetGameState();
-    currentState = STATE.PLAYING;
+  function returnToMenu() {
+    resultsScreen.style.display = 'none';
+    HUD.hide();
+    startScreen.style.display = 'flex';
+    currentState = STATE.MENU;
+
+    // Re-render start screen with updated progress
+    renderStartScreen();
+  }
+
+  function endMatch(isVictory) {
+    currentState = STATE.RESULTS;
+    HUD.hide();
+
+    // Save time played
+    Progress.addStageTimePlayed(currentStageId, matchTimer);
+
+    const stage = Stages.getStage(currentStageId);
+    const enemyHealthPct = Enemy.health / Enemy.maxHealth;
+
+    // Calculate stars
+    const stars = Stages.calculateStars(
+      Player.isDead,
+      Enemy.isDead,
+      enemyHealthPct,
+      playerDealtDamage
+    );
+
+    // Update progress (only upgrades, returns delta coins)
+    const coinsEarned = Progress.updateStage(currentStageId, stars, stage);
+    // If no upgrade happened, still show what they'd earn for this run
+    const displayCoins = coinsEarned > 0
+      ? coinsEarned
+      : Stages.calculateCoins(stars, stage);
+
+    // Show results screen
+    showResults(isVictory, stage, stars, displayCoins, coinsEarned > 0);
+  }
+
+  function showResults(isVictory, stage, stars, displayCoins, isNewRecord) {
+    // Title
+    resultsTitle.textContent = isVictory ? 'VICTORY!' : 'DEFEATED';
+    resultsTitle.className = isVictory ? 'victory' : 'defeat';
+
+    // Stage name
+    resultsStageName.textContent = stage.name;
+
+    // Reset stars
+    const starEls = [star1, star2, star3];
+    starEls.forEach(el => {
+      el.textContent = '☆';
+      el.classList.remove('filled');
+    });
+
+    // Fill stars with sequential animation
+    for (let i = 0; i < stars; i++) {
+      setTimeout(() => {
+        starEls[i].textContent = '★';
+        starEls[i].classList.add('filled');
+      }, 400 + i * 350);
+    }
+
+    // Coins
+    resultsCoinsAmount.textContent = `+${displayCoins}`;
+    const totalCoins = Progress.getCoins();
+    resultsTotalCoins.textContent = `Total: ${totalCoins} moedas`;
+
+    // Show screen
+    resultsScreen.style.display = 'flex';
+  }
+
+  // Called externally when player damages enemy
+  function notifyPlayerDealtDamage() {
+    playerDealtDamage = true;
   }
 
   function gameLoop(timestamp) {
@@ -111,8 +283,7 @@ const Game = (() => {
       case STATE.PLAYING:
         updatePlaying(dt);
         break;
-      case STATE.GAME_OVER:
-      case STATE.VICTORY:
+      case STATE.RESULTS:
         // Still render the scene for background
         updatePassive(dt);
         break;
@@ -136,6 +307,9 @@ const Game = (() => {
   }
 
   function updatePlaying(dt) {
+    // Track match time
+    matchTimer += dt;
+
     // 1. Process tracking → controls
     Controls.update(dt);
 
@@ -188,17 +362,23 @@ const Game = (() => {
 
     // 12. Check win/lose conditions
     if (Player.isDead) {
-      currentState = STATE.GAME_OVER;
-      HUD.hide();
-      gameOverScreen.style.display = 'flex';
+      endMatch(false);
     }
 
     if (Enemy.isDead) {
-      currentState = STATE.VICTORY;
+      // Small delay before showing results (let death animation play)
+      currentState = STATE.RESULTS;
       HUD.hide();
-      // Small delay before showing victory
+      // Save time played even before the delay
+      Progress.addStageTimePlayed(currentStageId, matchTimer);
+      matchTimer = 0; // Prevent double-save in endMatch
       setTimeout(() => {
-        victoryScreen.style.display = 'flex';
+        playerDealtDamage = true; // Enemy is dead, player definitely dealt damage
+        const stage = Stages.getStage(currentStageId);
+        const stars = Stages.calculateStars(false, true, 0, true);
+        const coinsEarned = Progress.updateStage(currentStageId, stars, stage);
+        const displayCoins = coinsEarned > 0 ? coinsEarned : Stages.calculateCoins(stars, stage);
+        showResults(true, stage, stars, displayCoins, coinsEarned > 0);
       }, 1500);
     }
   }
@@ -233,5 +413,6 @@ const Game = (() => {
 
   return {
     get state() { return currentState; },
+    notifyPlayerDealtDamage,
   };
 })();

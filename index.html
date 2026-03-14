@@ -101,6 +101,16 @@
     <div id="startContent">
       <h1 id="gameTitle">MEGA<span>BLASTER</span></h1>
       <p id="gameSubtitle">Arena of Gestures</p>
+
+      <!-- Player Coins -->
+      <div id="playerCoins">
+        <span id="playerCoinsIcon">🪙</span>
+        <span id="playerCoinsAmount">0</span>
+      </div>
+
+      <!-- Stage Cards (generated dynamically by main.js) -->
+      <div id="stageList"></div>
+
       <div id="instructions">
         <div class="instruction-item">
           <span class="instruction-icon">🏃</span>
@@ -119,26 +129,26 @@
           <span>Raise both hands = Invisibility</span>
         </div>
       </div>
-      <button id="startButton">START GAME</button>
       <p id="webcamNote">⚠️ Webcam access required</p>
     </div>
   </div>
 
-  <!-- Game Over Screen -->
-  <div id="gameOverScreen" style="display:none;">
-    <div id="gameOverContent">
-      <h1 id="gameOverTitle">DEFEATED</h1>
-      <p id="gameOverSubtitle">The mage was too powerful...</p>
-      <button id="retryButton">TRY AGAIN</button>
-    </div>
-  </div>
-
-  <!-- Victory Screen -->
-  <div id="victoryScreen" style="display:none;">
-    <div id="victoryContent">
-      <h1 id="victoryTitle">VICTORY!</h1>
-      <p id="victorySubtitle">The mage has been vanquished!</p>
-      <button id="playAgainButton">PLAY AGAIN</button>
+  <!-- Results Screen (unified for victory & defeat) -->
+  <div id="resultsScreen" style="display:none;">
+    <div id="resultsContent">
+      <h1 id="resultsTitle">VICTORY!</h1>
+      <p id="resultsStageName">Arena das Chamas</p>
+      <div id="resultsStars">
+        <span class="result-star" id="star1">☆</span>
+        <span class="result-star" id="star2">☆</span>
+        <span class="result-star" id="star3">☆</span>
+      </div>
+      <div id="resultsCoinsContainer">
+        <span id="resultsCoinsIcon">🪙</span>
+        <span id="resultsCoinsAmount">+0</span>
+      </div>
+      <p id="resultsTotalCoins"></p>
+      <button id="resultsButton">CONTINUE</button>
     </div>
   </div>
 
@@ -154,6 +164,8 @@
   <script src="js/powers.js"></script>
   <script src="js/crosshair.js"></script>
   <script src="js/hud.js"></script>
+  <script src="js/stages.js"></script>
+  <script src="js/progress.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

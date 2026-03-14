@@ -227,6 +227,7 @@ const Projectiles = (() => {
             active.splice(i, 1);
             Particles.createHitSparks(scene, proj.position);
             Enemy.takeDamage(proj.damage);
+            Game.notifyPlayerDealtDamage();
           }
         }
       }
