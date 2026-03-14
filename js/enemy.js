@@ -292,7 +292,7 @@ const Enemy = (() => {
       isCasting = true;
       castAnimTimer = 0;
       if (isRaging) {
-        attackTimer = 1.0 + Math.random() * 1.5; // 1.0-2.5 sec in rage (avg ~1.75)
+        attackTimer = 0.5 + Math.random() * 0.7; // 0.5-1.2 sec in rage (avg ~0.85)
       } else {
         attackTimer = 3 + Math.random() * 2; // 3-5 sec normal
       }

@@ -64,17 +64,14 @@ const Player = (() => {
       }
     }
 
-    // Charge speed modifier (halved when frozen)
-    const chargeSpeed = frozen ? CHARGE_SPEED * 0.5 : CHARGE_SPEED;
-
     // Fire charge
     if (fireCharging) {
-      fireCharge = Math.min(1, fireCharge + chargeSpeed * dt);
+      fireCharge = Math.min(1, fireCharge + CHARGE_SPEED * dt);
     }
 
     // Wind charge
     if (windCharging) {
-      windCharge = Math.min(1, windCharge + chargeSpeed * dt);
+      windCharge = Math.min(1, windCharge + CHARGE_SPEED * dt);
     }
   }
 
