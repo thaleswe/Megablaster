@@ -10,6 +10,8 @@ const Enemy = (() => {
   let castAnimTimer = 0;
   let isCasting = false;
   let isDead = false;
+  let isRaging = false;
+  let rageTriggered = false;
   let deathTimer = 0;
   let staffOrb, staffOrbLight;
   let bodyMesh, headMesh, hatMesh, staffMesh;
@@ -117,6 +119,8 @@ const Enemy = (() => {
     castAnimTimer = 0;
     isCasting = false;
     isDead = false;
+    isRaging = false;
+    rageTriggered = false;
     deathTimer = 0;
     hoverOffset = 0;
     lastKnownPlayerPos = null;
@@ -158,13 +162,29 @@ const Enemy = (() => {
     }
 
     // Hover animation
-    hoverOffset += dt * 2;
-    group.position.y = Math.sin(hoverOffset) * 0.1;
+    hoverOffset += dt * (isRaging ? 4 : 2);
+    group.position.y = Math.sin(hoverOffset) * (isRaging ? 0.2 : 0.1);
 
-    // Staff orb glow pulsing
-    const orbPulse = 0.7 + Math.sin(hoverOffset * 3) * 0.3;
-    staffOrb.material.opacity = orbPulse;
-    staffOrbLight.intensity = 0.3 + orbPulse * 0.5;
+    // Check rage mode trigger
+    if (!isRaging && health <= MAX_HEALTH * 0.3) {
+      isRaging = true;
+      rageTriggered = true; // one-time flag for HUD notification
+      // Visual: change body color to dark red
+      if (bodyMesh) bodyMesh.material.color.setHex(0x660022);
+    }
+
+    // Rage visual: pulsing red glow
+    if (isRaging) {
+      const ragePulse = 0.5 + Math.sin(hoverOffset * 2) * 0.5;
+      staffOrb.material.color.setHex(0xff0000);
+      staffOrbLight.color.setHex(0xff0000);
+      staffOrbLight.intensity = 1.0 + ragePulse * 2;
+    } else {
+      // Staff orb glow pulsing (normal)
+      const orbPulse = 0.7 + Math.sin(hoverOffset * 3) * 0.3;
+      staffOrb.material.opacity = orbPulse;
+      staffOrbLight.intensity = 0.3 + orbPulse * 0.5;
+    }
 
     // Casting animation
     if (isCasting) {
@@ -199,12 +219,16 @@ const Enemy = (() => {
       return null;
     }
 
-    // Attack timer
+    // Attack timer (2x faster in rage mode)
     attackTimer -= dt;
     if (attackTimer <= 0) {
       isCasting = true;
       castAnimTimer = 0;
-      attackTimer = 3 + Math.random() * 2; // 3-5 sec between attacks
+      if (isRaging) {
+        attackTimer = 1.5 + Math.random() * 1; // 1.5-2.5 sec in rage
+      } else {
+        attackTimer = 3 + Math.random() * 2; // 3-5 sec normal
+      }
     }
 
     return null;
@@ -244,6 +268,9 @@ const Enemy = (() => {
     get health() { return health; },
     get maxHealth() { return MAX_HEALTH; },
     get isDead() { return isDead; },
+    get isRaging() { return isRaging; },
+    get rageTriggered() { return rageTriggered; },
+    consumeRageTrigger() { rageTriggered = false; },
     get group() { return group; },
   };
 })();

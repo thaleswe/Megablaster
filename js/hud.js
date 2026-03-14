@@ -8,6 +8,7 @@ const HUD = (() => {
   let fireRingFill, windRingFill;
   let damageFlashEl;
   let invisIndicatorEl, invisCooldownEl;
+  let rageModeEl;
   let debugInfoEl, debugLeanEl, debugHandsEl, debugFPSEl;
 
   const RING_CIRCUMFERENCE = 2 * Math.PI * 45; // Match SVG circle radius=45
@@ -21,6 +22,7 @@ const HUD = (() => {
     damageFlashEl = document.getElementById('damageFlash');
     invisIndicatorEl = document.getElementById('invisIndicator');
     invisCooldownEl = document.getElementById('invisCooldown');
+    rageModeEl = document.getElementById('rageMode');
     debugInfoEl = document.getElementById('debugInfo');
     debugLeanEl = document.getElementById('debugLean');
     debugHandsEl = document.getElementById('debugHands');
@@ -72,6 +74,12 @@ const HUD = (() => {
         invisCooldownEl.style.display = 'none';
       }
     }
+
+    // Rage mode notification
+    if (Enemy.rageTriggered) {
+      Enemy.consumeRageTrigger();
+      showRageMode();
+    }
   }
 
   function showDamageFlash() {
@@ -91,6 +99,16 @@ const HUD = (() => {
     debugFPSEl.textContent = `FPS: ${fps}`;
     debugLeanEl.textContent = `Lean: ${lean.toFixed(2)}`;
     debugHandsEl.textContent = `R:${rightHand ? 'CLOSED' : 'open'} L:${leftHand ? 'CLOSED' : 'open'}`;
+  }
+
+  function showRageMode() {
+    // Big centered announcement
+    rageModeEl.style.display = 'block';
+    rageModeEl.classList.add('rage-announce');
+    // After animation, switch to persistent small indicator
+    setTimeout(() => {
+      rageModeEl.classList.remove('rage-announce');
+    }, 2000);
   }
 
   return {

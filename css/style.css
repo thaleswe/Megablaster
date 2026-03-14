@@ -264,6 +264,39 @@ body {
   color: rgba(150,150,150,0.6);
 }
 
+/* Rage Mode */
+#rageMode {
+  position: absolute;
+  top: 55px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Orbitron', monospace;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 4px;
+  color: #ff2200;
+  text-shadow: 0 0 20px rgba(255,34,0,0.8), 0 0 40px rgba(255,34,0,0.4);
+  animation: rage-pulse 0.5s ease-in-out infinite;
+}
+
+#rageMode.rage-announce {
+  font-size: 36px;
+  top: 40%;
+  animation: rage-announce 2s ease-out forwards;
+}
+
+@keyframes rage-pulse {
+  0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.7; transform: translateX(-50%) scale(1.05); }
+}
+
+@keyframes rage-announce {
+  0% { opacity: 0; transform: translateX(-50%) scale(2); }
+  20% { opacity: 1; transform: translateX(-50%) scale(1); }
+  80% { opacity: 1; transform: translateX(-50%) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) scale(0.8); }
+}
+
 /* Crosshair */
 #crosshair {
   position: absolute;
