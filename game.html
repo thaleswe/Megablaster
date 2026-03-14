@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MegaBlaster – Game</title>
+  <meta name="description" content="A first-person gesture-controlled arena game. Battle a mage using your body and hands!">
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Three.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <!-- MediaPipe Vision + Hands + Pose -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <!-- Webcam video (hidden, used by MediaPipe) -->
+  <video id="webcam" autoplay playsinline style="display:none;"></video>
+
+  <!-- Three.js canvas -->
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- Webcam preview (small corner) -->
+  <div id="webcamPreview">
+    <video id="webcamMini" autoplay playsinline muted></video>
+    <div id="trackingStatus">TRACKING: OFF</div>
+  </div>
+
+  <!-- HUD Overlay -->
+  <div id="hud" style="display:none;">
+    <!-- Player Health -->
+    <div id="playerHealthContainer">
+      <div id="playerHealthLabel">HP</div>
+      <div id="playerHealthBar">
+        <div id="playerHealthFill"></div>
+      </div>
+    </div>
+
+    <!-- Enemy Health -->
+    <div id="enemyHealthContainer">
+      <div id="enemyHealthLabel">MAGE</div>
+      <div id="enemyHealthBar">
+        <div id="enemyHealthFill"></div>
+        <div id="rageThresholdMarker"></div>
+      </div>
+    </div>
+
+    <!-- Rage Mode Notification -->
+    <div id="rageMode" style="display:none;">
+      <span>⚡ RAGE MODE ⚡</span>
+    </div>
+
+    <!-- Power Indicators -->
+    <div id="powerIndicators">
+      <div id="windPowerIndicator" class="power-indicator">
+        <svg viewBox="0 0 100 100" class="power-ring">
+          <circle cx="50" cy="50" r="45" class="power-ring-bg"/>
+          <circle cx="50" cy="50" r="45" class="power-ring-fill wind-ring" id="windRingFill"/>
+        </svg>
+        <span class="power-icon">💨</span>
+        <span class="power-label">L.HAND</span>
+      </div>
+      <div id="firePowerIndicator" class="power-indicator">
+        <svg viewBox="0 0 100 100" class="power-ring">
+          <circle cx="50" cy="50" r="45" class="power-ring-bg"/>
+          <circle cx="50" cy="50" r="45" class="power-ring-fill fire-ring" id="fireRingFill"/>
+        </svg>
+        <span class="power-icon">🔥</span>
+        <span class="power-label">R.HAND</span>
+      </div>
+    </div>
+
+    <!-- Invisibility Cooldown -->
+    <div id="invisIndicator" style="display:none;">
+      <span>👻 INVISIBLE</span>
+    </div>
+    <div id="invisCooldown" style="display:none;">
+      <span>👻 COOLDOWN</span>
+    </div>
+
+    <!-- Crosshair -->
+    <div id="crosshair" style="display:none;">
+      <div id="crosshairInner"></div>
+      <div id="crosshairDot"></div>
+    </div>
+
+    <!-- Damage Flash -->
+    <div id="damageFlash"></div>
+
+    <!-- Debug Info -->
+    <div id="debugInfo" style="display:none;">
+      <div id="debugLean">Lean: 0</div>
+      <div id="debugHands">Hands: --</div>
+      <div id="debugFPS">FPS: 0</div>
+    </div>
+  </div>
+
+  <!-- Results Screen (unified for victory & defeat) -->
+  <div id="resultsScreen" style="display:none;">
+    <div id="resultsContent">
+      <h1 id="resultsTitle">VICTORY!</h1>
+      <p id="resultsStageName">Arena das Chamas</p>
+      <div id="resultsStars">
+        <span class="result-star" id="star1">☆</span>
+        <span class="result-star" id="star2">☆</span>
+        <span class="result-star" id="star3">☆</span>
+      </div>
+      <div id="resultsCoinsContainer">
+        <span id="resultsCoinsIcon">🪙</span>
+        <span id="resultsCoinsAmount">+0</span>
+      </div>
+      <p id="resultsTotalCoins"></p>
+      <button id="resultsButton">CONTINUE</button>
+    </div>
+  </div>
+
+  <!-- Loading overlay -->
+  <div id="gameLoading">
+    <div id="gameLoadingContent">
+      <div class="loading-spinner"></div>
+      <p id="gameLoadingText">LOADING...</p>
+    </div>
+  </div>
+
+  <!-- Scripts (in dependency order) -->
+  <script src="js/scene.js"></script>
+  <script src="js/camera.js"></script>
+  <script src="js/particles.js"></script>
+  <script src="js/enemy.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/projectiles.js"></script>
+  <script src="js/tracking.js"></script>
+  <script src="js/controls.js"></script>
+  <script src="js/powers.js"></script>
+  <script src="js/crosshair.js"></script>
+  <script src="js/hud.js"></script>
+  <script src="js/stages.js"></script>
+  <script src="js/progress.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

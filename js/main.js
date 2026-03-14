@@ -1,23 +1,23 @@
 /* ============================================
    main.js – Game Loop & State Machine
+   (Game page only – no hub logic)
    ============================================ */
 
 const Game = (() => {
   // States
   const STATE = {
-    MENU: 'menu',
     LOADING: 'loading',
     PLAYING: 'playing',
     RESULTS: 'results',
   };
 
-  let currentState = STATE.MENU;
+  let currentState = STATE.LOADING;
   let lastTime = 0;
   let fpsCounter = 0;
   let fpsTimer = 0;
   let currentFPS = 0;
 
-  // Current stage
+  // Current stage (read from URL)
   let currentStageId = 'arena-das-chamas';
 
   // Track if player dealt damage (for 0-star detection)
@@ -26,27 +26,30 @@ const Game = (() => {
   // Match timer
   let matchTimer = 0;
 
-  // Stage icon mapping
-  const STAGE_ICONS = {
-    'arena-das-chamas': '🔥',
-    'arena-congelante': '❄️',
-  };
-
   // DOM elements
-  let startScreen, resultsScreen;
-  let resultsButton;
+  let resultsScreen, resultsButton;
   let resultsTitle, resultsStageName;
   let star1, star2, star3;
   let resultsCoinsAmount, resultsTotalCoins;
-  let playerCoinsAmount;
-  let stageListEl;
+  let gameLoadingEl, gameLoadingText;
 
   function init() {
+    // Read stage from URL
+    const params = new URLSearchParams(window.location.search);
+    currentStageId = params.get('stage') || 'arena-das-chamas';
+
+    // Validate stage exists
+    const stage = Stages.getStage(currentStageId);
+    if (!stage) {
+      console.error('[Game] Invalid stage:', currentStageId);
+      window.location.href = 'index.html';
+      return;
+    }
+
     // Load saved progress
     Progress.load();
 
     // Get DOM elements
-    startScreen = document.getElementById('startScreen');
     resultsScreen = document.getElementById('resultsScreen');
     resultsButton = document.getElementById('resultsButton');
     resultsTitle = document.getElementById('resultsTitle');
@@ -56,8 +59,8 @@ const Game = (() => {
     star3 = document.getElementById('star3');
     resultsCoinsAmount = document.getElementById('resultsCoinsAmount');
     resultsTotalCoins = document.getElementById('resultsTotalCoins');
-    playerCoinsAmount = document.getElementById('playerCoinsAmount');
-    stageListEl = document.getElementById('stageList');
+    gameLoadingEl = document.getElementById('gameLoading');
+    gameLoadingText = document.getElementById('gameLoadingText');
 
     // Initialize scene
     GameScene.init();
@@ -67,101 +70,31 @@ const Game = (() => {
     Crosshair.init();
 
     // Button handlers
-    resultsButton.addEventListener('click', returnToMenu);
+    resultsButton.addEventListener('click', returnToHub);
 
-    // Render the start screen stage cards
-    renderStartScreen();
-
-    // Start render loop (renders menu background too)
+    // Start render loop
     requestAnimationFrame(gameLoop);
 
-    console.log('[Game] Initialized');
+    // Auto-start the game
+    startGame();
+
+    console.log(`[Game] Initialized for stage: ${currentStageId}`);
   }
 
-  function renderStartScreen() {
-    // Update coins
-    playerCoinsAmount.textContent = Progress.getCoins();
-
-    // Build stage cards
-    stageListEl.innerHTML = '';
-    const stages = Stages.getAllStages();
-
-    stages.forEach(stage => {
-      const isUnlocked = Progress.isStageUnlocked(stage.id) || stage.unlocked;
-      const stars = Progress.getStageStars(stage.id);
-      const timePlayed = Progress.getStageTimePlayed(stage.id);
-      const icon = STAGE_ICONS[stage.id] || '⚔️';
-
-      const card = document.createElement('div');
-      card.className = 'stage-card' + (isUnlocked ? '' : ' locked');
-
-      // Stars HTML
-      let starsHtml = '';
-      for (let i = 0; i < 3; i++) {
-        if (i < stars) {
-          starsHtml += '<span class="star-filled">★</span>';
-        } else {
-          starsHtml += '<span class="star-empty">☆</span>';
-        }
-      }
-
-      // Time played formatted
-      const timeStr = formatTime(timePlayed);
-
-      if (isUnlocked) {
-        card.innerHTML = `
-          <span class="stage-card-icon">${icon}</span>
-          <div class="stage-card-name">${stage.name}</div>
-          <div class="stage-card-desc">${stage.description}</div>
-          <div class="stage-card-stars">${starsHtml}</div>
-          <div class="stage-card-time">${timePlayed > 0 ? '⏱ ' + timeStr : ''}</div>
-          <button class="stage-card-btn" data-stage-id="${stage.id}">PLAY</button>
-        `;
-      } else {
-        card.innerHTML = `
-          <span class="stage-card-icon">🔒</span>
-          <div class="stage-card-name">${stage.name}</div>
-          <div class="stage-card-desc">${stage.description}</div>
-          <span class="stage-card-lock">LOCKED</span>
-        `;
-      }
-
-      stageListEl.appendChild(card);
-    });
-
-    // Bind play buttons
-    stageListEl.querySelectorAll('.stage-card-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const stageId = e.target.dataset.stageId;
-        currentStageId = stageId;
-        startGame(e.target);
-      });
-    });
-  }
-
-  function formatTime(totalSeconds) {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = Math.floor(totalSeconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  }
-
-  async function startGame(buttonEl) {
-    if (currentState !== STATE.MENU) return;
+  async function startGame() {
     currentState = STATE.LOADING;
 
-    // Show loading on the clicked button
-    if (buttonEl) {
-      buttonEl.textContent = 'LOADING...';
-      buttonEl.disabled = true;
-    }
+    // Show loading
+    if (gameLoadingEl) gameLoadingEl.style.display = 'flex';
 
-    // Initialize webcam tracking (only first time)
+    // Initialize webcam tracking
     if (!Tracking.isInitialized) {
+      if (gameLoadingText) gameLoadingText.textContent = 'INITIALIZING CAMERA...';
       await Tracking.init();
     }
 
-    // Hide start screen, show HUD
-    startScreen.style.display = 'none';
+    // Hide loading, show HUD
+    if (gameLoadingEl) gameLoadingEl.style.display = 'none';
     HUD.show();
 
     // Reset game state
@@ -183,14 +116,8 @@ const Game = (() => {
     matchTimer = 0;
   }
 
-  function returnToMenu() {
-    resultsScreen.style.display = 'none';
-    HUD.hide();
-    startScreen.style.display = 'flex';
-    currentState = STATE.MENU;
-
-    // Re-render start screen with updated progress
-    renderStartScreen();
+  function returnToHub() {
+    window.location.href = 'index.html';
   }
 
   function endMatch(isVictory) {
@@ -277,9 +204,8 @@ const Game = (() => {
 
     // State-based update
     switch (currentState) {
-      case STATE.MENU:
       case STATE.LOADING:
-        updateMenu(dt);
+        updateLoading(dt);
         break;
       case STATE.PLAYING:
         updatePlaying(dt);
@@ -294,8 +220,8 @@ const Game = (() => {
     GameScene.render(GameCamera.camera);
   }
 
-  function updateMenu(dt) {
-    // Slow rotate camera around arena for menu background
+  function updateLoading(dt) {
+    // Slow rotate camera while loading
     const time = lastTime * 0.0001;
     if (GameCamera.camera) {
       GameCamera.camera.position.set(
