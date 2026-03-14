@@ -14,6 +14,7 @@ const Enemy = (() => {
   let staffOrb, staffOrbLight;
   let bodyMesh, headMesh, hatMesh, staffMesh;
   let hoverOffset = 0;
+  let lastKnownPlayerPos = null; // Frozen position when player goes invisible
 
   function init(scene) {
     group = new THREE.Group();
@@ -118,6 +119,7 @@ const Enemy = (() => {
     isDead = false;
     deathTimer = 0;
     hoverOffset = 0;
+    lastKnownPlayerPos = null;
     if (group) {
       group.visible = true;
       group.scale.set(1, 1, 1);
@@ -134,11 +136,25 @@ const Enemy = (() => {
       return null;
     }
 
-    // Face player
-    if (playerPos) {
-      const lookTarget = playerPos.clone();
-      lookTarget.y = 0;
-      group.lookAt(lookTarget);
+    // Face player (or last known position if invisible)
+    if (playerInvisible) {
+      // Freeze: keep looking at the last known position
+      if (!lastKnownPlayerPos && playerPos) {
+        lastKnownPlayerPos = playerPos.clone();
+      }
+      if (lastKnownPlayerPos) {
+        const lookTarget = lastKnownPlayerPos.clone();
+        lookTarget.y = 0;
+        group.lookAt(lookTarget);
+      }
+    } else {
+      // Normal: track the player and clear frozen position
+      lastKnownPlayerPos = null;
+      if (playerPos) {
+        const lookTarget = playerPos.clone();
+        lookTarget.y = 0;
+        group.lookAt(lookTarget);
+      }
     }
 
     // Hover animation

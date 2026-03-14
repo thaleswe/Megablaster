@@ -136,7 +136,7 @@ const Projectiles = (() => {
   }
 
   function spawnPlayerFire(scene, origin, target, chargeLevel) {
-    const damage = 15 + chargeLevel * 25; // 15-40 damage based on charge
+    const damage = Math.round(5 + chargeLevel * 35); // 5-40 damage, proportional to charge
     const proj = new Projectile({
       type: 'player_fire',
       origin: origin,
@@ -155,7 +155,7 @@ const Projectiles = (() => {
   }
 
   function spawnPlayerWind(scene, origin, target, chargeLevel) {
-    const damage = 10 + chargeLevel * 15; // 10-25 damage
+    const damage = Math.round(3 + chargeLevel * 22); // 3-25 damage, proportional to charge
     const proj = new Projectile({
       type: 'player_wind',
       origin: origin,

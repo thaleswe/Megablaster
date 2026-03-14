@@ -99,7 +99,7 @@ const Controls = (() => {
     // Note: webcam is mirrored, so we invert
     let rawLean = 0;
     if (Math.abs(shoulderDiffY) > LEAN_THRESHOLD || Math.abs(bodyLean) > LEAN_THRESHOLD) {
-      rawLean = -(shoulderDiffY * 4 + bodyLean * 6);
+      rawLean = (shoulderDiffY * 4 + bodyLean * 6);
       rawLean = Math.max(-1, Math.min(1, rawLean));
     }
 
