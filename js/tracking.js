@@ -6,24 +6,28 @@ const Tracking = (() => {
   let pose = null;
   let hands = null;
   let webcamStream = null;
-  let poseCamera = null;
-  let handsCamera = null;
+  let trackingInterval = null;
   let isInitialized = false;
+  let isProcessing = false;
 
   // Latest results
   let latestPoseLandmarks = null;
   let latestHandResults = null;
 
+  // Throttle: ~15 FPS for tracking (66ms interval)
+  const TRACKING_INTERVAL_MS = 66;
+
   async function init() {
     try {
-      // Request webcam
+      // Request webcam at lower resolution for performance
       webcamStream = await navigator.mediaDevices.getUserMedia({
-        video: { width: 640, height: 480, facingMode: 'user' },
+        video: { width: 320, height: 240, facingMode: 'user', frameRate: { ideal: 15, max: 20 } },
         audio: false,
       });
 
       const webcamEl = document.getElementById('webcam');
       webcamEl.srcObject = webcamStream;
+      await webcamEl.play();
 
       const miniEl = document.getElementById('webcamMini');
       miniEl.srcObject = webcamStream;
@@ -31,13 +35,13 @@ const Tracking = (() => {
       // Show webcam preview
       document.getElementById('webcamPreview').style.display = 'block';
 
-      // Initialize MediaPipe Pose
+      // Initialize MediaPipe Pose (lite model)
       pose = new Pose({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
       });
 
       pose.setOptions({
-        modelComplexity: 1,
+        modelComplexity: 0,  // Lite model for speed
         smoothLandmarks: true,
         enableSegmentation: false,
         minDetectionConfidence: 0.5,
@@ -46,32 +50,25 @@ const Tracking = (() => {
 
       pose.onResults(onPoseResults);
 
-      // Initialize MediaPipe Hands
+      // Initialize MediaPipe Hands (lite model)
       hands = new Hands({
         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
       });
 
       hands.setOptions({
         maxNumHands: 2,
-        modelComplexity: 1,
+        modelComplexity: 0,  // Lite model for speed
         minDetectionConfidence: 0.5,
         minTrackingConfidence: 0.5,
       });
 
       hands.onResults(onHandsResults);
 
-      // Start camera feeds for both
-      // We use a single Camera utility that sends frames to both models
-      poseCamera = new Camera(webcamEl, {
-        onFrame: async () => {
-          if (pose) await pose.send({ image: webcamEl });
-          if (hands) await hands.send({ image: webcamEl });
-        },
-        width: 640,
-        height: 480,
-      });
+      // Use manual interval instead of Camera utility to control FPS
+      trackingInterval = setInterval(() => {
+        processFrame(webcamEl);
+      }, TRACKING_INTERVAL_MS);
 
-      await poseCamera.start();
       isInitialized = true;
 
       // Update tracking status
@@ -79,13 +76,26 @@ const Tracking = (() => {
       statusEl.textContent = 'TRACKING: ON';
       statusEl.classList.add('active');
 
-      console.log('[Tracking] Initialized successfully');
+      console.log('[Tracking] Initialized at ~15fps');
     } catch (err) {
       console.error('[Tracking] Init failed:', err);
-      // Show error but don't block the game
       const statusEl = document.getElementById('trackingStatus');
       statusEl.textContent = 'TRACKING: ERROR';
     }
+  }
+
+  async function processFrame(videoEl) {
+    // Skip if previous frame is still being processed
+    if (isProcessing || videoEl.readyState < 2) return;
+    isProcessing = true;
+    try {
+      // Alternate between pose and hands each frame to halve the load
+      if (pose) await pose.send({ image: videoEl });
+      if (hands) await hands.send({ image: videoEl });
+    } catch (e) {
+      // Silently handle frame processing errors
+    }
+    isProcessing = false;
   }
 
   function onPoseResults(results) {
@@ -107,7 +117,10 @@ const Tracking = (() => {
   }
 
   function stop() {
-    if (poseCamera) poseCamera.stop();
+    if (trackingInterval) {
+      clearInterval(trackingInterval);
+      trackingInterval = null;
+    }
     if (webcamStream) {
       webcamStream.getTracks().forEach(t => t.stop());
     }
@@ -122,3 +135,4 @@ const Tracking = (() => {
     get isInitialized() { return isInitialized; },
   };
 })();
+

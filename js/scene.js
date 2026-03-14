@@ -12,9 +12,9 @@ const GameScene = (() => {
 
     // Renderer
     const canvas = document.getElementById('gameCanvas');
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(0.75);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
