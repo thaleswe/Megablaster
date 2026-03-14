@@ -10,6 +10,10 @@ const Powers = (() => {
     const ctrl = Controls.state;
 
     // ---- FIRE POWER (right hand) ----
+    // Cancel charge if hand left camera
+    if (Player.fireCharging && !ctrl.rightHandVisible) {
+      Player.releaseFireCharge(); // discard charge
+    }
     if (ctrl.rightHandClosed && !Player.fireCharging) {
       Player.startFireCharge();
     }
@@ -26,6 +30,10 @@ const Powers = (() => {
     }
 
     // ---- WIND POWER (left hand) ----
+    // Cancel charge if hand left camera
+    if (Player.windCharging && !ctrl.leftHandVisible) {
+      Player.releaseWindCharge(); // discard charge
+    }
     if (ctrl.leftHandClosed && !Player.windCharging) {
       Player.startWindCharge();
     }

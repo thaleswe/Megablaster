@@ -11,6 +11,9 @@ const Controls = (() => {
     rightHandClosed: false,
     leftHandClosed: false,
     bothHandsRaised: false,
+    // Hand visibility (is the hand detected in camera?)
+    rightHandVisible: false,
+    leftHandVisible: false,
     // Transition tracking
     prevRightClosed: false,
     prevLeftClosed: false,
@@ -149,20 +152,24 @@ const Controls = (() => {
 
       if (isRightHand) {
         state.rightHandClosed = isClosed;
+        state.rightHandVisible = true;
         rightDetected = true;
       } else {
         state.leftHandClosed = isClosed;
+        state.leftHandVisible = true;
         leftDetected = true;
       }
     }
 
-    // If a hand is not detected, maintain previous state briefly
-    // (to avoid flickering)
+    // If a hand is not detected, reset its state immediately
+    // so powers stop charging when hand leaves camera
     if (!rightDetected) {
-      // Keep previous state for a moment
+      state.rightHandClosed = false;
+      state.rightHandVisible = false;
     }
     if (!leftDetected) {
-      // Keep previous state for a moment
+      state.leftHandClosed = false;
+      state.leftHandVisible = false;
     }
   }
 
@@ -211,6 +218,8 @@ const Controls = (() => {
     state.rightHandClosed = false;
     state.leftHandClosed = false;
     state.bothHandsRaised = false;
+    state.rightHandVisible = false;
+    state.leftHandVisible = false;
     state.prevRightClosed = false;
     state.prevLeftClosed = false;
     state.prevBothRaised = false;

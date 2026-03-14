@@ -58,8 +58,8 @@ const Tracking = (() => {
       hands.setOptions({
         maxNumHands: 2,
         modelComplexity: 0,  // Lite model for speed
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5,
+        minDetectionConfidence: 0.7,  // Higher threshold to reduce false positives
+        minTrackingConfidence: 0.6,
       });
 
       hands.onResults(onHandsResults);
