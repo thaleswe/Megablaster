@@ -87,7 +87,7 @@ const Game = (() => {
     const stages = Stages.getAllStages();
 
     stages.forEach(stage => {
-      const isUnlocked = Progress.isStageUnlocked(stage.id);
+      const isUnlocked = Progress.isStageUnlocked(stage.id) || stage.unlocked;
       const stars = Progress.getStageStars(stage.id);
       const timePlayed = Progress.getStageTimePlayed(stage.id);
       const icon = STAGE_ICONS[stage.id] || '⚔️';
@@ -172,8 +172,9 @@ const Game = (() => {
   }
 
   function resetGameState() {
+    GameScene.buildEnvironment(currentStageId);
     Player.reset();
-    Enemy.resetState();
+    Enemy.resetState(currentStageId);
     GameCamera.reset();
     Controls.reset();
     Projectiles.clearAll(GameScene.scene);
@@ -330,10 +331,10 @@ const Game = (() => {
 
     // 5. Update enemy AI
     const enemyAction = Enemy.update(dt, playerPos, Player.invisible);
-    if (enemyAction && enemyAction.type === 'fireball') {
-      // Spawn enemy fireball from staff tip toward player
+    if (enemyAction && enemyAction.type === 'projectile') {
+      // Spawn enemy projectile from staff tip toward player
       const staffTip = Enemy.getStaffTip();
-      Projectiles.spawnEnemyFireball(GameScene.scene, staffTip, enemyAction.target);
+      Projectiles.spawnEnemyProjectile(GameScene.scene, staffTip, enemyAction.target, currentStageId);
     }
 
     // 6. Update projectiles (movement + collision)

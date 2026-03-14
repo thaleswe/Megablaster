@@ -22,8 +22,10 @@ const Enemy = (() => {
   const SHIELD_RAGE_COOLDOWN = 15;
   let shieldMesh;
 
+  let currentStage = 'arena-das-chamas';
+
   let staffOrb, staffOrbLight;
-  let bodyMesh, headMesh, hatMesh, staffMesh;
+  let bodyMesh, headMesh, hatMesh, brim, staffMesh;
   let hoverOffset = 0;
   let lastKnownPlayerPos = null; // Frozen position when player goes invisible
 
@@ -83,7 +85,7 @@ const Enemy = (() => {
       color: 0x220033,
       roughness: 0.6,
     });
-    const brim = new THREE.Mesh(brimGeo, brimMat);
+    brim = new THREE.Mesh(brimGeo, brimMat);
     brim.position.y = 2.85;
     group.add(brim);
 
@@ -137,7 +139,10 @@ const Enemy = (() => {
     return group;
   }
 
-  function resetState() {
+  function resetState(stageId = 'arena-das-chamas') {
+    currentStage = stageId;
+    const isIce = currentStage === 'arena-congelante';
+
     health = MAX_HEALTH;
     attackTimer = 3;
     castAnimTimer = 0;
@@ -156,6 +161,22 @@ const Enemy = (() => {
       group.visible = true;
       group.scale.set(1, 1, 1);
       group.position.y = 0;
+    }
+
+    if (isIce) {
+      if (bodyMesh) bodyMesh.material.color.setHex(0x1a4466); 
+      if (headMesh) headMesh.material.color.setHex(0x5599bb); 
+      if (hatMesh) hatMesh.material.color.setHex(0x0f3355);
+      if (brim) brim.material.color.setHex(0x0f3355);
+      if (staffOrb) staffOrb.material.color.setHex(0x22ccff);
+      if (staffOrbLight) staffOrbLight.color.setHex(0x22ccff);
+    } else {
+      if (bodyMesh) bodyMesh.material.color.setHex(0x330044);
+      if (headMesh) headMesh.material.color.setHex(0x664488);
+      if (hatMesh) hatMesh.material.color.setHex(0x220033);
+      if (brim) brim.material.color.setHex(0x220033);
+      if (staffOrb) staffOrb.material.color.setHex(0xff4400);
+      if (staffOrbLight) staffOrbLight.color.setHex(0xff4400);
     }
   }
 
@@ -208,19 +229,21 @@ const Enemy = (() => {
     hoverOffset += dt * (isRaging ? 4 : 2);
     group.position.y = Math.sin(hoverOffset) * (isRaging ? 0.2 : 0.1);
 
+    const isIce = currentStage === 'arena-congelante';
+
     // Check rage mode trigger
     if (!isRaging && health <= MAX_HEALTH * 0.4) {
       isRaging = true;
       rageTriggered = true; // one-time flag for HUD notification
-      // Visual: change body color to dark red
-      if (bodyMesh) bodyMesh.material.color.setHex(0x660022);
+      // Visual: change body color
+      if (bodyMesh) bodyMesh.material.color.setHex(isIce ? 0x0055ff : 0x660022);
     }
 
     // Rage visual: pulsing red glow
     if (isRaging) {
       const ragePulse = 0.5 + Math.sin(hoverOffset * 2) * 0.5;
-      staffOrb.material.color.setHex(0xff0000);
-      staffOrbLight.color.setHex(0xff0000);
+      staffOrb.material.color.setHex(isIce ? 0x00ffff : 0xff0000);
+      staffOrbLight.color.setHex(isIce ? 0x00ffff : 0xff0000);
       staffOrbLight.intensity = 1.0 + ragePulse * 2;
     } else {
       // Staff orb glow pulsing (normal)
@@ -236,18 +259,18 @@ const Enemy = (() => {
       const castProgress = castAnimTimer / 1.0; // 1 sec cast time
       staffOrb.scale.setScalar(1 + castProgress * 1.5);
       staffOrbLight.intensity = 1 + castProgress * 3;
-      staffOrb.material.color.setHex(0xff6600);
+      staffOrb.material.color.setHex(isIce ? 0x88ffff : 0xff6600);
 
       if (castAnimTimer >= 1.0) {
         // Fire!
         isCasting = false;
         castAnimTimer = 0;
         staffOrb.scale.setScalar(1);
-        staffOrb.material.color.setHex(0xff4400);
+        staffOrb.material.color.setHex(isIce ? 0x00aaff : 0xff4400);
 
         // Return fire command with target position
         if (!playerInvisible) {
-          return { type: 'fireball', target: playerPos.clone() };
+          return { type: 'projectile', target: playerPos.clone() };
         } else {
           // When invisible, fire in a random direction
           const randomAngle = Math.random() * Math.PI * 2;
@@ -256,7 +279,7 @@ const Enemy = (() => {
             1.5,
             Math.sin(randomAngle) * 10
           );
-          return { type: 'fireball', target: randomTarget };
+          return { type: 'projectile', target: randomTarget };
         }
       }
       return null;
@@ -280,10 +303,11 @@ const Enemy = (() => {
   function takeDamage(amount) {
     if (isDead) return;
     health -= amount;
-    // Flash red
+    // Flash red or white
     if (bodyMesh) {
       const originalColor = bodyMesh.material.color.getHex();
-      bodyMesh.material.color.setHex(0xff0000);
+      const isIce = currentStage === 'arena-congelante';
+      bodyMesh.material.color.setHex(isIce ? 0xffffff : 0xff0000);
       setTimeout(() => {
         if (bodyMesh) bodyMesh.material.color.setHex(originalColor);
       }, 150);
@@ -291,7 +315,7 @@ const Enemy = (() => {
     if (health <= 0) {
       health = 0;
       isDead = true;
-      Particles.createMageDeathExplosion(GameScene.scene, new THREE.Vector3(0, 2, 0));
+      Particles.createMageDeathExplosion(GameScene.scene, new THREE.Vector3(0, 2, 0), currentStage);
     }
   }
 

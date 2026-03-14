@@ -18,11 +18,11 @@ const Stages = (() => {
     {
       id: 'arena-congelante',
       name: 'Arena Congelante',
-      description: 'Em breve...',
+      description: 'Derrote o mago do gelo no centro da arena',
       order: 2,
-      boss: { name: '???', maxHealth: 250 },
+      boss: { name: 'Mago do Gelo', maxHealth: 250 },
       rewards: { coinsPerStar: 150 },
-      unlocked: false,
+      unlocked: true,
     },
   ];
 

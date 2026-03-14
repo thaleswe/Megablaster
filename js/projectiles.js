@@ -39,6 +39,11 @@ const Projectiles = (() => {
           emissive = 0xff2200;
           size = 0.3;
           break;
+        case 'enemy_iceball':
+          color = 0x00ccff;
+          emissive = 0x00aaff;
+          size = 0.3;
+          break;
         case 'player_fire':
           color = 0xff6600;
           emissive = 0xff4400;
@@ -120,9 +125,10 @@ const Projectiles = (() => {
     }
   }
 
-  function spawnEnemyFireball(scene, origin, target) {
+  function spawnEnemyProjectile(scene, origin, target, stageId) {
+    const isIce = stageId === 'arena-congelante';
     const proj = new Projectile({
-      type: 'enemy_fireball',
+      type: isIce ? 'enemy_iceball' : 'enemy_fireball',
       origin: origin,
       target: target,
       speed: Enemy.isRaging ? 10 : 5, // ~1 sec to reach player in rage, normally 2 sec
@@ -184,7 +190,7 @@ const Projectiles = (() => {
       }
 
       // Collision checks
-      if (proj.type === 'enemy_fireball') {
+      if (proj.type === 'enemy_fireball' || proj.type === 'enemy_iceball') {
         // Check hit on player
         const distToPlayer = proj.position.distanceTo(playerPos);
         if (distToPlayer < proj.radius + 0.8) {
@@ -242,7 +248,7 @@ const Projectiles = (() => {
   }
 
   return {
-    spawnEnemyFireball,
+    spawnEnemyProjectile,
     spawnPlayerFire,
     spawnPlayerWind,
     update,

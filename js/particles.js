@@ -193,11 +193,18 @@ const Particles = (() => {
     );
   }
 
-  function createMageDeathExplosion(scene, position) {
-    // Big dramatic explosion
-    createExplosion(scene, position, new THREE.Color(1, 0.3, 0), new THREE.Color(0.5, 0, 0.5), 80, 8, 1.5);
-    createExplosion(scene, position.clone().add(new THREE.Vector3(0, 1, 0)),
-      new THREE.Color(1, 1, 0.5), new THREE.Color(0.8, 0, 0), 50, 6, 1.2);
+  function createMageDeathExplosion(scene, position, stageId) {
+    const isIce = stageId === 'arena-congelante';
+    if (isIce) {
+      createExplosion(scene, position, new THREE.Color(0, 0.8, 1), new THREE.Color(0, 0, 0.5), 80, 8, 1.5);
+      createExplosion(scene, position.clone().add(new THREE.Vector3(0, 1, 0)),
+        new THREE.Color(0.8, 1, 1), new THREE.Color(0, 0.4, 0.8), 50, 6, 1.2);
+    } else {
+      // Big dramatic explosion
+      createExplosion(scene, position, new THREE.Color(1, 0.3, 0), new THREE.Color(0.5, 0, 0.5), 80, 8, 1.5);
+      createExplosion(scene, position.clone().add(new THREE.Vector3(0, 1, 0)),
+        new THREE.Color(1, 1, 0.5), new THREE.Color(0.8, 0, 0), 50, 6, 1.2);
+    }
   }
 
   function update(dt) {
