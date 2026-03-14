@@ -13,7 +13,13 @@ const Stages = (() => {
       order: 1,
       boss: { name: 'Mage', maxHealth: 200 },
       rewards: { coinsPerStar: 100 },
-      unlocked: true, // Stage 1 always unlocked
+      unlocked: true,
+      superpower: {
+        type: 'shield',
+        cooldown: 20,
+        rageCooldown: 15,
+        duration: 5,
+      },
     },
     {
       id: 'arena-congelante',
@@ -23,6 +29,12 @@ const Stages = (() => {
       boss: { name: 'Mago do Gelo', maxHealth: 250 },
       rewards: { coinsPerStar: 150 },
       unlocked: true,
+      superpower: {
+        type: 'freeze',
+        cooldown: 20,
+        rageCooldown: 15,
+        duration: 6,
+      },
     },
   ];
 

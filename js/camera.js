@@ -43,7 +43,9 @@ const GameCamera = (() => {
     // headTiltX/Y: small camera look offsets
 
     // Update orbit angle based on body lean
-    targetAngle += leanAmount * ORBIT_SPEED * dt;
+    // Frozen: orbit at 6x slower speed
+    const speedMod = Player.frozen ? (1/6) : 1.0;
+    targetAngle += leanAmount * ORBIT_SPEED * speedMod * dt;
 
     // Smooth interpolation
     orbitAngle += (targetAngle - orbitAngle) * Math.min(1, LERP_SPEED * dt);

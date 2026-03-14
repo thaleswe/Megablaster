@@ -21,12 +21,12 @@ const Powers = (() => {
       const charge = Player.releaseFireCharge();
       if (charge >= MIN_CHARGE_TO_FIRE) {
         fireFire(charge);
-        Enemy.tryActivateShield(); // Try to shield when player fires
+        Enemy.useSuperpower(); // Try to use superpower when player fires
       }
     }
-    // Strategic shield activation when holding high charge
+    // Strategic superpower activation when holding high charge
     if (Player.fireCharging && Player.fireCharge > 0.8) {
-      Enemy.tryActivateShield();
+      Enemy.useSuperpower();
     }
 
     // ---- WIND POWER (left hand) ----
@@ -41,11 +41,11 @@ const Powers = (() => {
       const charge = Player.releaseWindCharge();
       if (charge >= MIN_CHARGE_TO_FIRE) {
         fireWind(charge);
-        Enemy.tryActivateShield(); // Try to shield when player fires
+        Enemy.useSuperpower(); // Try to use superpower when player fires
       }
     }
     if (Player.windCharging && Player.windCharge > 0.8) {
-      Enemy.tryActivateShield();
+      Enemy.useSuperpower();
     }
 
     // ---- INVISIBILITY (both hands raised) ----

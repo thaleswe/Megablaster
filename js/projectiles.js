@@ -227,12 +227,27 @@ const Projectiles = (() => {
             Particles.createHitSparks(scene, proj.position);
             
           } else {
-            // Normal hit enemy
+            // Normal hit enemy — apply element weakness multiplier
+            let finalDamage = proj.damage;
+            const isIce = Enemy.currentStage === 'arena-congelante';
+            if (proj.type === 'player_fire' && isIce) {
+              // Ice mage weak to fire
+              finalDamage = Math.round(finalDamage * 1.5);
+            } else if (proj.type === 'player_wind' && !isIce) {
+              // Fire mage weak to wind
+              finalDamage = Math.round(finalDamage * 1.5);
+            } else if (proj.type === 'player_fire' && !isIce) {
+              // Fire resists fire
+              finalDamage = Math.round(finalDamage * 0.7);
+            } else if (proj.type === 'player_wind' && isIce) {
+              // Ice resists wind
+              finalDamage = Math.round(finalDamage * 0.7);
+            }
             proj.alive = false;
             proj.removeFromScene(scene);
             active.splice(i, 1);
             Particles.createHitSparks(scene, proj.position);
-            Enemy.takeDamage(proj.damage);
+            Enemy.takeDamage(finalDamage);
             Game.notifyPlayerDealtDamage();
           }
         }

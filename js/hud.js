@@ -9,6 +9,7 @@ const HUD = (() => {
   let damageFlashEl;
   let invisIndicatorEl, invisCooldownEl;
   let rageModeEl;
+  let frozenIndicatorEl, freezeOverlayEl;
   let debugInfoEl, debugLeanEl, debugHandsEl, debugFPSEl;
 
   const RING_CIRCUMFERENCE = 2 * Math.PI * 45; // Match SVG circle radius=45
@@ -23,6 +24,8 @@ const HUD = (() => {
     invisIndicatorEl = document.getElementById('invisIndicator');
     invisCooldownEl = document.getElementById('invisCooldown');
     rageModeEl = document.getElementById('rageMode');
+    frozenIndicatorEl = document.getElementById('frozenIndicator');
+    freezeOverlayEl = document.getElementById('freezeOverlay');
     debugInfoEl = document.getElementById('debugInfo');
     debugLeanEl = document.getElementById('debugLean');
     debugHandsEl = document.getElementById('debugHands');
@@ -79,6 +82,26 @@ const HUD = (() => {
     if (Enemy.rageTriggered) {
       Enemy.consumeRageTrigger();
       showRageMode();
+    }
+
+    // Freeze indicator
+    if (frozenIndicatorEl) {
+      if (Player.frozen) {
+        frozenIndicatorEl.style.display = 'block';
+        frozenIndicatorEl.querySelector('span').textContent =
+          `❄️ FROZEN ${Player.frozenTimer.toFixed(1)}s`;
+      } else {
+        frozenIndicatorEl.style.display = 'none';
+      }
+    }
+
+    // Freeze overlay
+    if (freezeOverlayEl) {
+      if (Player.frozen) {
+        freezeOverlayEl.classList.add('active');
+      } else {
+        freezeOverlayEl.classList.remove('active');
+      }
     }
   }
 

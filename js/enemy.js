@@ -13,14 +13,15 @@ const Enemy = (() => {
   let isRaging = false;
   let rageTriggered = false;
   let deathTimer = 0;
-  
   // Shield
   let shieldActive = false;
-  let shieldCooldown = 15; // Set to 15s initial
   const SHIELD_DURATION = 5;
-  const SHIELD_NORMAL_COOLDOWN = 20;
-  const SHIELD_RAGE_COOLDOWN = 15;
+  let shieldTimer = 0;
   let shieldMesh;
+
+  // Universal superpower state
+  let superpowerCooldown = 10; // initial cooldown
+  let superpowerConfig = null; // set from stage config
 
   let currentStage = 'arena-das-chamas';
 
@@ -153,7 +154,12 @@ const Enemy = (() => {
     deathTimer = 0;
     shieldActive = false;
     shieldTimer = 0;
-    shieldCooldown = 15;
+
+    // Load superpower config from stage
+    const stage = Stages.getStage(currentStage);
+    superpowerConfig = stage ? stage.superpower : null;
+    superpowerCooldown = 10; // initial cooldown before first use
+
     hoverOffset = 0;
     lastKnownPlayerPos = null;
     if (shieldMesh) shieldMesh.visible = false;
@@ -210,19 +216,14 @@ const Enemy = (() => {
       }
     }
 
-    // Shield timers
+    // Shield update
     if (shieldActive) {
       shieldTimer -= dt;
-      // Elegant, subtle pulse
       shieldMesh.material.opacity = 0.08 + Math.sin(shieldTimer * 5) * 0.04;
-      
       if (shieldTimer <= 0) {
         shieldActive = false;
         shieldMesh.visible = false;
-        shieldCooldown = isRaging ? SHIELD_RAGE_COOLDOWN : SHIELD_NORMAL_COOLDOWN;
       }
-    } else if (shieldCooldown > 0) {
-      shieldCooldown -= dt;
     }
 
     // Hover animation
@@ -297,6 +298,15 @@ const Enemy = (() => {
       }
     }
 
+    // Superpower auto-cast (for passive superpowers like freeze)
+    if (superpowerConfig && !playerInvisible) {
+      superpowerCooldown -= dt;
+      if (superpowerCooldown <= 0 && superpowerConfig.type === 'freeze') {
+        activateFreeze(playerPos);
+        superpowerCooldown = isRaging ? superpowerConfig.rageCooldown : superpowerConfig.cooldown;
+      }
+    }
+
     return null;
   }
 
@@ -326,14 +336,57 @@ const Enemy = (() => {
     return worldPos;
   }
 
-  function tryActivateShield() {
-    if (!shieldActive && shieldCooldown <= 0 && !isDead) {
+  // ---- Superpower: Shield ----
+  function activateShield() {
+    if (!shieldActive && !isDead) {
       shieldActive = true;
-      shieldTimer = SHIELD_DURATION;
+      shieldTimer = superpowerConfig ? superpowerConfig.duration : SHIELD_DURATION;
       shieldMesh.visible = true;
+      superpowerCooldown = isRaging
+        ? superpowerConfig.rageCooldown
+        : superpowerConfig.cooldown;
       return true;
     }
     return false;
+  }
+
+  // ---- Superpower: Freeze ----
+  function activateFreeze(playerPos) {
+    Player.applyFreeze();
+    // Visual flash on staff orb
+    if (staffOrb) {
+      staffOrb.material.color.setHex(0xffffff);
+      staffOrbLight.color.setHex(0xffffff);
+      staffOrbLight.intensity = 4;
+      setTimeout(() => {
+        if (staffOrb && !isDead) {
+          staffOrb.material.color.setHex(0x22ccff);
+          staffOrbLight.color.setHex(0x22ccff);
+          staffOrbLight.intensity = 1;
+        }
+      }, 300);
+    }
+    // Ice particles at player
+    if (playerPos) {
+      Particles.createExplosion(
+        GameScene.scene, playerPos,
+        new THREE.Color(0.6, 0.9, 1), new THREE.Color(0, 0.4, 0.8),
+        40, 3, 1.0
+      );
+    }
+  }
+
+  // ---- Universal superpower trigger ----
+  // Called reactively (e.g. when player fires) — dispatches by type
+  function useSuperpower() {
+    if (!superpowerConfig || isDead || superpowerCooldown > 0) return false;
+    switch (superpowerConfig.type) {
+      case 'shield':
+        return activateShield();
+      // 'freeze' is auto-cast on cooldown in update(), not reactive
+      default:
+        return false;
+    }
   }
 
   return {
@@ -342,6 +395,7 @@ const Enemy = (() => {
     resetState,
     takeDamage,
     getStaffTip,
+    useSuperpower,
     get health() { return health; },
     get maxHealth() { return MAX_HEALTH; },
     get isDead() { return isDead; },
@@ -349,7 +403,7 @@ const Enemy = (() => {
     get rageTriggered() { return rageTriggered; },
     get shieldActive() { return shieldActive; },
     consumeRageTrigger() { rageTriggered = false; },
-    tryActivateShield,
     get group() { return group; },
+    get currentStage() { return currentStage; },
   };
 })();

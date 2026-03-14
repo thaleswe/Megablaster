@@ -20,6 +20,11 @@ const Player = (() => {
   let windCharging = false;
   const CHARGE_SPEED = 0.5; // Full charge in 2 sec
 
+  // Freeze debuff (ice mage special)
+  let frozen = false;
+  let frozenTimer = 0;
+  const FREEZE_DURATION = 6;
+
   function reset() {
     health = MAX_HEALTH;
     invisible = false;
@@ -29,6 +34,8 @@ const Player = (() => {
     windCharge = 0;
     fireCharging = false;
     windCharging = false;
+    frozen = false;
+    frozenTimer = 0;
   }
 
   function update(dt) {
@@ -48,14 +55,26 @@ const Player = (() => {
       if (invisCooldown < 0) invisCooldown = 0;
     }
 
+    // Freeze timer
+    if (frozen) {
+      frozenTimer -= dt;
+      if (frozenTimer <= 0) {
+        frozen = false;
+        frozenTimer = 0;
+      }
+    }
+
+    // Charge speed modifier (halved when frozen)
+    const chargeSpeed = frozen ? CHARGE_SPEED * 0.5 : CHARGE_SPEED;
+
     // Fire charge
     if (fireCharging) {
-      fireCharge = Math.min(1, fireCharge + CHARGE_SPEED * dt);
+      fireCharge = Math.min(1, fireCharge + chargeSpeed * dt);
     }
 
     // Wind charge
     if (windCharging) {
-      windCharge = Math.min(1, windCharge + CHARGE_SPEED * dt);
+      windCharge = Math.min(1, windCharge + chargeSpeed * dt);
     }
   }
 
@@ -113,7 +132,14 @@ const Player = (() => {
     get windCharge() { return windCharge; },
     get fireCharging() { return fireCharging; },
     get windCharging() { return windCharging; },
+    get frozen() { return frozen; },
+    get frozenTimer() { return frozenTimer; },
+    applyFreeze() {
+      frozen = true;
+      frozenTimer = FREEZE_DURATION;
+    },
     INVIS_DURATION,
     INVIS_COOLDOWN_TIME,
+    FREEZE_DURATION,
   };
 })();
