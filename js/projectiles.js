@@ -199,13 +199,35 @@ const Projectiles = (() => {
       } else if (proj.type === 'player_fire' || proj.type === 'player_wind') {
         // Check hit on enemy
         const distToEnemy = proj.position.distanceTo(enemyPos);
-        if (distToEnemy < proj.radius + 1.0) {
-          // Hit enemy
-          proj.alive = false;
-          proj.removeFromScene(scene);
-          active.splice(i, 1);
-          Particles.createHitSparks(scene, proj.position);
-          Enemy.takeDamage(proj.damage);
+        if (distToEnemy < proj.radius + 1.5) { // slightly larger hitbox for shield/body
+          if (Enemy.shieldActive) {
+            // REFLECT!
+            proj.type = 'enemy_fireball'; // Now it can hit the player
+            
+            // Aim back at player
+            proj.target = playerPos.clone();
+            proj.direction.subVectors(proj.target, proj.position).normalize();
+            
+            // 2x speed!
+            proj.speed = proj.speed * 2;
+            proj.age = 0; // reset lifetime
+            
+            // Visual change: turn it bright blue to show it's reflected
+            proj.mesh.material.color.setHex(0x0088ff);
+            proj.light.color.setHex(0x0088ff);
+            proj.glow.material.color.setHex(0x0088ff);
+            
+            // Reflection spark
+            Particles.createHitSparks(scene, proj.position);
+            
+          } else {
+            // Normal hit enemy
+            proj.alive = false;
+            proj.removeFromScene(scene);
+            active.splice(i, 1);
+            Particles.createHitSparks(scene, proj.position);
+            Enemy.takeDamage(proj.damage);
+          }
         }
       }
     }

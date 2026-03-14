@@ -17,10 +17,13 @@ const Powers = (() => {
       const charge = Player.releaseFireCharge();
       if (charge >= MIN_CHARGE_TO_FIRE) {
         fireFire(charge);
+        Enemy.tryActivateShield(); // Try to shield when player fires
       }
     }
-    // If hand not detected but was charging, keep charging
-    // (prevents flicker from losing hand tracking briefly)
+    // Strategic shield activation when holding high charge
+    if (Player.fireCharging && Player.fireCharge > 0.8) {
+      Enemy.tryActivateShield();
+    }
 
     // ---- WIND POWER (left hand) ----
     if (ctrl.leftHandClosed && !Player.windCharging) {
@@ -30,7 +33,11 @@ const Powers = (() => {
       const charge = Player.releaseWindCharge();
       if (charge >= MIN_CHARGE_TO_FIRE) {
         fireWind(charge);
+        Enemy.tryActivateShield(); // Try to shield when player fires
       }
+    }
+    if (Player.windCharging && Player.windCharge > 0.8) {
+      Enemy.tryActivateShield();
     }
 
     // ---- INVISIBILITY (both hands raised) ----

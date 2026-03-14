@@ -13,6 +13,15 @@ const Enemy = (() => {
   let isRaging = false;
   let rageTriggered = false;
   let deathTimer = 0;
+  
+  // Shield
+  let shieldActive = false;
+  let shieldTimer = 0;
+  let shieldCooldown = 15; // Set to 15s initial
+  const SHIELD_DURATION = 5;
+  const SHIELD_MAX_COOLDOWN = 20;
+  let shieldMesh;
+
   let staffOrb, staffOrbLight;
   let bodyMesh, headMesh, hatMesh, staffMesh;
   let hoverOffset = 0;
@@ -106,6 +115,21 @@ const Enemy = (() => {
     staffOrbLight.position.copy(staffOrb.position);
     group.add(staffOrbLight);
 
+    // Reflector Shield (hidden by default)
+    // Clean, minimalist protective bubble
+    const shieldGeo = new THREE.SphereGeometry(2.1, 32, 32);
+    const shieldMat = new THREE.MeshBasicMaterial({
+      color: 0x88ccff, // Soft cyan
+      transparent: true,
+      opacity: 0.1, // Very subtle
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide // Shows only back layer giving it a rim-lit bubble look from inside
+    });
+    shieldMesh = new THREE.Mesh(shieldGeo, shieldMat);
+    shieldMesh.position.y = 1.8;
+    shieldMesh.visible = false;
+    group.add(shieldMesh);
+
     group.position.set(0, 0, 0);
     scene.add(group);
 
@@ -122,8 +146,12 @@ const Enemy = (() => {
     isRaging = false;
     rageTriggered = false;
     deathTimer = 0;
+    shieldActive = false;
+    shieldTimer = 0;
+    shieldCooldown = 15;
     hoverOffset = 0;
     lastKnownPlayerPos = null;
+    if (shieldMesh) shieldMesh.visible = false;
     if (group) {
       group.visible = true;
       group.scale.set(1, 1, 1);
@@ -159,6 +187,21 @@ const Enemy = (() => {
         lookTarget.y = 0;
         group.lookAt(lookTarget);
       }
+    }
+
+    // Shield timers
+    if (shieldActive) {
+      shieldTimer -= dt;
+      // Elegant, subtle pulse
+      shieldMesh.material.opacity = 0.08 + Math.sin(shieldTimer * 5) * 0.04;
+      
+      if (shieldTimer <= 0) {
+        shieldActive = false;
+        shieldMesh.visible = false;
+        shieldCooldown = SHIELD_MAX_COOLDOWN;
+      }
+    } else if (shieldCooldown > 0) {
+      shieldCooldown -= dt;
     }
 
     // Hover animation
@@ -259,6 +302,16 @@ const Enemy = (() => {
     return worldPos;
   }
 
+  function tryActivateShield() {
+    if (!shieldActive && shieldCooldown <= 0 && !isDead) {
+      shieldActive = true;
+      shieldTimer = SHIELD_DURATION;
+      shieldMesh.visible = true;
+      return true;
+    }
+    return false;
+  }
+
   return {
     init,
     update,
@@ -270,7 +323,9 @@ const Enemy = (() => {
     get isDead() { return isDead; },
     get isRaging() { return isRaging; },
     get rageTriggered() { return rageTriggered; },
+    get shieldActive() { return shieldActive; },
     consumeRageTrigger() { rageTriggered = false; },
+    tryActivateShield,
     get group() { return group; },
   };
 })();
