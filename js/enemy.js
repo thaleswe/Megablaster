@@ -166,7 +166,7 @@ const Enemy = (() => {
     group.position.y = Math.sin(hoverOffset) * (isRaging ? 0.2 : 0.1);
 
     // Check rage mode trigger
-    if (!isRaging && health <= MAX_HEALTH * 0.3) {
+    if (!isRaging && health <= MAX_HEALTH * 0.4) {
       isRaging = true;
       rageTriggered = true; // one-time flag for HUD notification
       // Visual: change body color to dark red

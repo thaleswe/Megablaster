@@ -157,6 +157,18 @@ body {
   border-radius: 5px;
   overflow: hidden;
   border: 1px solid rgba(255,255,255,0.1);
+  position: relative;
+}
+
+#rageThresholdMarker {
+  position: absolute;
+  top: 0;
+  left: 40%; /* 40% of max health */
+  width: 2px;
+  height: 100%;
+  background: #ff2200;
+  box-shadow: 0 0 5px #ff2200;
+  z-index: 5;
 }
 
 #enemyHealthFill {

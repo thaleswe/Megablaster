@@ -125,7 +125,7 @@ const Projectiles = (() => {
       type: 'enemy_fireball',
       origin: origin,
       target: target,
-      speed: 5, // ~2 sec to reach player at 10m
+      speed: Enemy.isRaging ? 10 : 5, // ~1 sec to reach player in rage, normally 2 sec
       damage: Enemy.isRaging ? 22 : 15, // 1.5x damage in rage mode
       lifetime: 5,
       radius: 0.5,
