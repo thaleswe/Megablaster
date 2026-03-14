@@ -84,14 +84,20 @@ const Tracking = (() => {
     }
   }
 
+  let frameCounter = 0;
+
   async function processFrame(videoEl) {
     // Skip if previous frame is still being processed
     if (isProcessing || videoEl.readyState < 2) return;
     isProcessing = true;
     try {
       // Alternate between pose and hands each frame to halve the load
-      if (pose) await pose.send({ image: videoEl });
-      if (hands) await hands.send({ image: videoEl });
+      if (frameCounter % 2 === 0) {
+        if (pose) await pose.send({ image: videoEl });
+      } else {
+        if (hands) await hands.send({ image: videoEl });
+      }
+      frameCounter++;
     } catch (e) {
       // Silently handle frame processing errors
     }

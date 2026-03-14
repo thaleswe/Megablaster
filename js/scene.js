@@ -118,10 +118,10 @@ const GameScene = (() => {
       top.position.set(Math.cos(ang) * 16, 4.2, Math.sin(ang) * 16);
       scene.add(top);
 
-      // Pillar light
-      const pLight = new THREE.PointLight(0x6644ff, 0.3, 8);
-      pLight.position.copy(top.position);
-      scene.add(pLight);
+      // Pillar light (Removed 8 PointLights which severely drop FPS, using BasicMaterial on the sphere is enough to convey glowing!)
+      // const pLight = new THREE.PointLight(0x6644ff, 0.3, 8);
+      // pLight.position.copy(top.position);
+      // scene.add(pLight);
     }
   }
 
